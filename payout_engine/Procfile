@@ -1,0 +1,2 @@
+web: gunicorn payout_engine.wsgi
+worker: celery -A payout_engine worker -l info
