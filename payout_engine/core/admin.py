@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Merchant, Payout, LedgerEntry
+from django.db import models
 
 
 class MerchantAdmin(admin.ModelAdmin):
