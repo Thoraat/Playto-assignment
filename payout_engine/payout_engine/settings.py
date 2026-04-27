@@ -3,6 +3,9 @@ import os
 import dj_database_url
 from corsheaders.defaults import default_headers
 
+from dotenv import load_dotenv
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ========================
@@ -84,6 +87,8 @@ DATABASES = {
         default=os.environ.get("DATABASE_URL")
         )
 }
+
+print("DATABASE_URL:", os.environ.get("DATABASE_URL"))
 
 # ========================
 # ⚡ CELERY (optional for now)
