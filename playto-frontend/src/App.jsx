@@ -92,10 +92,13 @@
 
 // export default App;
 
-
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { createPayout, getPayout } from "./api";
+
+// ✅ AUTO SWITCH (local vs production)
+const API =
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000/api/v1"; // fallback for local
 
 function App() {
   const [amount, setAmount] = useState("");
@@ -105,21 +108,30 @@ function App() {
   const [balance, setBalance] = useState(0);
   const [payouts, setPayouts] = useState([]);
 
+  const MERCHANT_ID = 1;
+
   // 🔹 Create payout
   const handleCreate = async () => {
     try {
-      const res = await createPayout({
-        merchant_id: 9,
-        amount_paise: parseInt(amount),
-        bank_account_id: 1,
-      });
+      const res = await axios.post(
+        `${API}/payouts`,
+        {
+          merchant_id: MERCHANT_ID,
+          amount_paise: parseInt(amount),
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+        }
+      );
 
       setPayoutId(res.data.id);
       setStatus(res.data.status);
 
-      await fetchBalance();   // ✅ update balance
-      await fetchPayouts();   // ✅ update history
-
+      await fetchBalance();
+      await fetchPayouts();
     } catch (err) {
       alert(err.response?.data?.error || "Error");
     }
@@ -129,14 +141,14 @@ function App() {
   const handleCheck = async () => {
     if (!payoutId) return;
 
-    const res = await getPayout(payoutId);
+    const res = await axios.get(`${API}/payouts/${payoutId}`);
     setStatus(res.data.status);
   };
 
   // 🔹 Fetch balance
   const fetchBalance = async () => {
     const res = await axios.get(
-      "http://127.0.0.1:8000/api/v1/merchant/9/balance"
+      `${API}/merchant/${MERCHANT_ID}/balance`
     );
     setBalance(res.data.balance);
   };
@@ -144,23 +156,23 @@ function App() {
   // 🔹 Fetch payout history
   const fetchPayouts = async () => {
     const res = await axios.get(
-      "http://127.0.0.1:8000/api/v1/merchant/9/payouts"
+      `${API}/merchant/${MERCHANT_ID}/payouts`
     );
     setPayouts(res.data);
   };
 
-  // 🔹 Load data on start
+  // 🔹 Load on start
   useEffect(() => {
     fetchBalance();
     fetchPayouts();
   }, []);
 
-  // 🔹 Auto-refresh status (🔥 important)
+  // 🔹 Auto refresh
   useEffect(() => {
     if (!payoutId) return;
 
     const interval = setInterval(async () => {
-      const res = await getPayout(payoutId);
+      const res = await axios.get(`${API}/payouts/${payoutId}`);
       setStatus(res.data.status);
 
       if (
@@ -189,12 +201,10 @@ function App() {
 
         <h1 className="text-xl font-bold mb-2">Payout Dashboard</h1>
 
-        {/* ✅ Balance */}
         <p className="mb-3">
           <b>Balance:</b> ₹ {balance / 100}
         </p>
 
-        {/* ✅ Input */}
         <input
           type="number"
           placeholder="Amount (paise)"
@@ -203,7 +213,6 @@ function App() {
           onChange={(e) => setAmount(e.target.value)}
         />
 
-        {/* ✅ Create */}
         <button
           onClick={handleCreate}
           className="bg-blue-500 text-white w-full py-2 rounded mb-4"
@@ -211,7 +220,6 @@ function App() {
           Create Payout
         </button>
 
-        {/* ✅ Current payout */}
         {payoutId && (
           <>
             <p><b>ID:</b> {payoutId}</p>
@@ -231,7 +239,6 @@ function App() {
           </>
         )}
 
-        {/* ✅ History */}
         <h3 className="mt-6 font-bold">Payout History</h3>
 
         <table className="w-full mt-2 text-sm border">
